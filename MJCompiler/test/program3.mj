@@ -1,0 +1,26 @@
+program MJProgram
+   enum Boja { CRVENA, PLAVA, ZELENA };
+   int a[];
+   int b;
+{
+    int m(int index) {
+        b++;
+        return a[index];
+    }
+
+	void main() {
+	   a = new int [3];
+
+       a[0] = Boja.CRVENA;
+       a[1] = 10;
+       a[2] = 15;
+
+       a[1] = m(Boja.PLAVA) * m(Boja.ZELENA);
+       a[2] = a[2] + m(Boja.CRVENA);
+
+	   print(a[0], 5);
+	   print(a[1], 5);
+	   print(a[2], 5);
+	   print(b   , 5);
+    }
+}

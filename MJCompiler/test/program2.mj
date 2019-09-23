@@ -1,0 +1,27 @@
+program MJProgram
+   enum Boja { CRVENA, PLAVA, ZELENA };
+   int a[];
+   char podatak;
+{
+    void m(int index) {
+
+    }
+
+	void main() {
+	   a = new int [3];
+
+// ==== GRESKE: Niz
+       b[0] = 1997;
+       podatak[0] = 1997;
+	   a[podatak] = 1997;
+
+// =====================
+
+// ==== GRESKE: Metode
+       a(0);
+       m();
+       m(podatak);
+// =====================
+
+    }
+}

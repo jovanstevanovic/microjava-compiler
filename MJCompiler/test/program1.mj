@@ -1,0 +1,12 @@
+program MJProgram
+   int a{};
+{
+    // **** SINTAKSNA GRESKA ****
+    void m(int b{}) {
+
+    }
+
+	void main() {
+
+    }
+}

@@ -1,0 +1,296 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+
+// import java.io.*;
+import rs.ac.bg.etf.pp1.ast.*;
+
+
+parser code {:
+	
+	boolean errorDetected = false;
+	
+	Logger log = Logger.getLogger(getClass());
+    
+    Symbol errorSymbol = null;
+
+    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+      done_parsing();
+      report_error(message, info);
+    }
+  
+    public void syntax_error(Symbol cur_token) {
+        report_error("\nSintaksna greska", cur_token);
+    }
+  
+    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+        report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
+    }
+
+    public void report_error(String message, Object info) {
+    	errorDetected = true;
+    	StringBuilder msg = new StringBuilder(message); 
+    	if (info instanceof Symbol) {
+    		errorSymbol = (Symbol)info;
+    		
+            msg.append(" na liniji ").append(errorSymbol.left).append(" u koloni ").append(errorSymbol.right);
+            if (errorSymbol.value != null)
+            	msg.append(". Pogresan simbol: ").append(errorSymbol.value.toString());
+        }
+        
+        log.error(msg.toString());
+    }
+    
+    public void report_info(String message, Object info) {
+    	StringBuilder msg = new StringBuilder(message); 
+    	if (info instanceof Symbol) {
+    		errorSymbol = (Symbol)info;
+    		
+            msg.append(" na liniji ").append(errorSymbol.left).append(" u koloni ").append(errorSymbol.right);
+            if (errorSymbol.value != null)
+            	msg.append(". Pogresan simbol: ").append(((Symbol)info).value.toString());
+        }
+        
+        log.info(msg.toString());
+    }
+    
+:}
+
+scan with {:
+	Symbol s = this.getScanner().next_token();
+	if (s != null && s.value != null) 
+		log.info(s.toString() + " " + s.value.toString());
+	return s;
+:}
+
+
+terminal PROGRAM, PRINT, READ, NEW, CONST, ENUM, VOID, RETURN;
+terminal SEMICOLON, COMMA, DOT;
+terminal LBRACKET, RBRACKET, LPARENT, RPARENT, LBRACE, RBRACE;
+terminal INC, DEC, MUL, DIV, MOD, ADD, SUB, ASSIGN;
+terminal Integer NUM;
+terminal Character CHAR;
+terminal Boolean BOOL;
+terminal String IDENT;
+
+nonterminal VarDeclList, VarDecl, ProgDeclList;
+nonterminal VarConstDecl, VarConstList, VarConstName;
+nonterminal VarEnumDecl, VarEnumList, VarEnum;
+nonterminal VarDeclVar, VarDeclSingle;
+nonterminal MethodDeclList, MetDeclList;
+nonterminal FormParams, FormParamList, FormParamDecl;
+nonterminal StatementList, Statement;
+nonterminal StatementDesignator;
+nonterminal ActualParams, ActualParamList;
+nonterminal AddOp, MulOp;
+
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Program, ProgName, Designator, MethodDecl, MethodTypeName; 
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, Term, TermList, Expression, Factor, CValue; 
+
+// ==================================================================================
+
+Program ::= (ProgramClass) PROGRAM ProgName:p ProgDeclList LBRACE MethodDeclList RBRACE;
+
+ProgName ::= (ProgNameClass) IDENT:pName;
+
+// ==================================================================================
+
+ProgDeclList ::= (ProgDeclListClass) ProgDeclList VarDecl  
+				|
+				(NoProgDeclListClass) /* epsilon */ 
+				;
+
+VarDecl ::= (VarDeclConstClass) VarConstDecl
+			|
+			(VarDeclVarClass) VarDeclVar
+			|
+			(VarDeclEnumClass) VarEnumDecl
+			;
+
+// ==================================================================================
+				
+VarConstDecl ::= (VarConstDeclClass) CONST Type:cType VarConstList SEMICOLON;
+
+VarConstList ::= (VarConstListClass) VarConstList COMMA VarConstName
+				 |
+				 (VarConstListSingleClass) VarConstName
+				 ;
+
+
+VarConstName ::= (VarConstNameClass) IDENT:cName ASSIGN CValue:cValue;
+
+CValue ::= (CValueNumClass) NUM
+		   | 
+		   (CValueCharClass) CHAR
+		   | 
+		   (CValueBoolClass) BOOL
+		   ;
+
+// =================================================================================
+
+VarEnumDecl ::= (VarEnumDeclClass) ENUM IDENT:enumName LBRACE VarEnumList RBRACE SEMICOLON;
+
+VarEnumList ::= (VarEnumListClass) VarEnumList COMMA VarEnum
+				| 
+				(VarEnumListSingleClass) VarEnum
+				;
+
+VarEnum ::= (VarEnumValueWithInitClass) IDENT:eName ASSIGN NUM
+			| 
+			(VarEnumValueWithoutInitClass) IDENT:eName
+			;
+
+// ================================================================================
+
+VarDeclVar ::= (VarDeclVarSingleClass) Type:varType VarDeclList SEMICOLON; 
+
+VarDeclList ::= (VarDeclListClass) VarDeclList COMMA VarDeclSingle
+				| 
+				(VarDeclListSingleClass) VarDeclSingle
+				;
+				
+VarDeclSingle ::= (VarDeclSingleArrayClass) IDENT:array LBRACKET RBRACKET
+				  |
+				  (VarDeclSingleSingleClass) IDENT:vName
+				  |
+				  (VarDeclSingleErrorClass) error {: this.parser.report_error("Sintaksna greska - neispravna definicija promenljive", this.parser.errorSymbol); :}
+				  ;
+
+Type ::= (TypeClass) IDENT:typeName;
+
+// ===============================================================================
+
+MethodDeclList ::=  (MethodDeclListClass) MethodDeclList MethodDecl
+					|
+					(NoMethodDeclListClass) /* epsilon */
+					;
+
+MethodDecl ::= (MethodDeclClass) MethodTypeName LPARENT FormParams RPARENT MetDeclList LBRACE StatementList RBRACE;
+
+MetDeclList ::= (MetDeclListClass) MetDeclList VarDeclVar
+				| 
+				(NoMetDeclListClass) /* epsilon */
+				;
+				   
+MethodTypeName ::= (MethodTypeNameOtherClass) Type:rType IDENT:mName
+				   | 
+				   (MethodTypeNameVoidClass) VOID IDENT:mName
+				   ;
+
+// ================================================================================
+
+FormParams ::= (FormParamsClass) FormParamList 
+			   | 
+			   (NoFormParamClass) /* epsilon */ 
+			   ;
+
+FormParamList ::=   (FormParamListClass) FormParamList COMMA FormParamDecl
+					|
+					(FormParamDeclClassSingle) FormParamDecl
+					;
+					
+FormParamDecl ::=   (FormParamDeclArrayClass) Type:type IDENT:name LBRACKET RBRACKET
+					|
+					(FormParamDeclVarClass) Type:type IDENT:name
+					|
+					(FormParamDeclErrorClass) error {: this.parser.report_error("Sintaksna greska - neispravna deklaracija formalnih parametara funkcije", this.parser.errorSymbol); :}
+					;
+
+// ===============================================================================
+
+StatementList ::= (StatementListClass) StatementList Statement 
+				  |
+				  (NoStatementListClass) /* epsilon */
+				  ;
+
+Statement ::= (StatementDesignatorClass) StatementDesignator SEMICOLON
+			  |
+			  (StatementReadClass) READ LPARENT Designator RPARENT SEMICOLON
+			  |
+			  (StatementPrintWithNumClass) PRINT LPARENT Expression COMMA NUM RPARENT SEMICOLON
+			  |
+			  (StatementPrintWithoutNumClass) PRINT LPARENT Expression RPARENT SEMICOLON
+			  |
+			  (StatementBlockClass) LBRACE StatementList RBRACE SEMICOLON
+			  |
+			  (StatementEmptyReturnClass) RETURN SEMICOLON
+			  |
+			  (StatementReturnValueClass) RETURN Expression SEMICOLON
+			  ;
+
+// ===============================================================================
+
+StatementDesignator ::= (StatementDesignatorAssignClass) Designator ASSIGN Expression
+						| 
+						(StatementDesignatorFunctionClass) Designator LPARENT ActualParams RPARENT
+						|
+						(StatementDesignatorIncClass) Designator INC
+						|
+						(StatementDesignatorDecClass) Designator DEC
+						;
+
+Designator ::= (DesignatorEnumClass) IDENT:name1 DOT IDENT:name2
+				|
+				(DesignatorArrayClass) IDENT:name LBRACKET Expression RBRACKET
+				|
+				(DesignatorVarClass) IDENT:name
+				;
+				
+// ===============================================================================
+
+ActualParams ::= (ActualParamsClass) ActualParamList 
+				 | 
+				 (NoActualParamsClass) /* epsilon */ 
+				 ;
+			   
+ActualParamList ::= (ActualParamrListClass) ActualParamList COMMA Expression
+					|
+					(ActualParamListSingleClass) Expression
+					;
+
+// ===============================================================================
+			  
+Expression ::= (ExpressionPlusClass) TermList
+		 	   |
+		 	   (ExpressionMinusClass) SUB TermList
+		 	   |
+		 	   (ExpressionErrorClass) error {: this.parser.report_error("Sintaksna greska - neispravan izraz", this.parser.errorSymbol); :}
+			   ;
+
+TermList ::= (TermListClass) TermList AddOp Term
+			 |
+			 (TermListSingleClass) Term
+			 ;
+
+Term ::= (TermFactorAddClass) Term MulOp Factor
+		 |
+		 (TermFactorSingleClass) Factor
+		 ;
+
+Factor ::=  (FactorConstValue) CValue
+			|
+			(FactorExpressionClass) LPARENT Expression RPARENT
+			|
+			(FactorNewArrayClass) NEW Type LBRACKET Expression RBRACKET
+			|
+			(FactorNewObjectClass) NEW Type
+			|
+			(FactorFunctionClass) Designator LPARENT ActualParams RPARENT
+			|
+			(FactorDesignerClass) Designator
+			;
+
+// ===============================================================================
+
+AddOp ::= 	(AddOpClass) ADD
+			|
+			(SubOpClass) SUB
+			;
+			
+MulOp ::= 	(MulOpClass) MUL
+			|
+			(DivOpClass) DIV
+			|
+			(ModOpClass) MOD
+			;

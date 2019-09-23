@@ -1,0 +1,69 @@
+// Test301
+
+program test301
+
+	enum Broj { NULA, JEDAN, PET=5, DESET=10};
+
+	const int jedan = 1;
+	const int pet = 5;
+
+	int niz[];
+	char nizch[];
+	
+{
+	int inc(int broj)
+	{
+		return broj + Broj.JEDAN;
+	}
+
+	void mul(int arr[], int index, int b)
+	{
+		arr[index] = arr[index] * b;
+	}
+
+	void main()	
+		int bodovi;
+		Broj nula, jedan;
+	{
+		nula = Broj.NULA;
+		jedan = Broj.JEDAN;	
+
+		bodovi = 0;
+		bodovi++;
+		bodovi = bodovi + jedan;
+		bodovi = bodovi * pet;
+		bodovi--;
+		print(bodovi);
+			
+		
+		niz = new int[2];
+		niz[nula] = pet;
+		niz[1] = Broj.DESET;
+		mul(niz, inc(0), 2);
+		mul(niz, Broj.NULA, inc(inc(Broj.JEDAN)+1));
+		bodovi = niz[1]/niz[0];
+		print(bodovi);
+		print(niz[Broj.JEDAN]);
+		
+		
+		nizch = new char[3];
+		nizch[0] = 'a';
+		nizch[jedan] = 'b';
+		nizch[pet - 3] = 'c';
+		print( nizch[inc(0)], 5);
+		print( nizch[jedan * 2]);
+			
+		
+		bodovi = bodovi + ((pet * jedan - 1) * inc(Broj.JEDAN) - (3 % 2 + 3 * 2 - 3) - inc(Broj.NULA) * 0); 
+		print(bodovi);
+			
+			
+		read(bodovi);
+		bodovi = inc(bodovi);
+		print(bodovi);
+			
+	
+	}
+}
+
+

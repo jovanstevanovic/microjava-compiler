@@ -1,0 +1,9 @@
+program MJProgram
+   int a[];
+{
+    // **** LEKSICKA GRESKA ****
+	void main() {
+	   a = new int [3]:
+	   a[0] = a[0] ^ a[1];
+    }
+}
